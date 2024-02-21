@@ -1,0 +1,1 @@
+-- This project will attempt to split a paragraph into its phrasal category.
