@@ -17,8 +17,10 @@ find (h : t) s n
     | h == s = n
     | otherwise = find t s (n+1)
 
+-- initialize the matrix
 init_Matrix lst1 lst2 = Matrix lst1 lst2 [[0.0 | _ <- lst2] | _ <- lst1]
 
+-- split the elements into pairs of strings
 split :: String -> (String, String)
 split [] = ("","")
 split str = helperfun str ""
@@ -45,11 +47,12 @@ readtxt path = do
         pos_lst = new_elem pos []
 
         -- matrix initialization
-        transition_matrix = init_Matrix pos_lst pos_lst
+        transition_matrix = init_Matrix ("<S>": pos_lst) (pos_lst ++ ["<E>"])
         emission_matrix = init_Matrix word_lst pos_lst
     
     return contents
 
+-- filter out redundant elements
 new_elem [] acc = []
 new_elem (h:t) acc 
     | h `elem` acc = new_elem t acc
