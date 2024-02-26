@@ -1,5 +1,6 @@
 data Matrix = Empty
-    | Matrix [String] [String] [[Double]]
+        | Matrix [String] [String] [[Double]]
+    deriving Show
 
 -- get data from the matrix
 getData :: Matrix -> String -> String -> Maybe Double
@@ -18,6 +19,7 @@ find (h : t) s n
     | otherwise = find t s (n+1)
 
 -- initialize the matrix
+init_Matrix :: [String] -> [String] -> Matrix
 init_Matrix lst1 lst2 = Matrix lst1 lst2 [[0.0 | _ <- lst2] | _ <- lst1]
 
 -- split the elements into pairs of strings
@@ -26,6 +28,7 @@ split [] = ("","")
 split str = helperfun str ""
 
 helperfun :: String -> String -> (String, String)
+helperfun "" _ = ("","")
 helperfun (h:t) acc
     | h == ' ' = (acc, t)
     | otherwise = helperfun t (acc ++ [h])
@@ -52,8 +55,31 @@ readtxt path = do
     
     return contents
 
+make_matrixes :: FilePath -> IO (Int, Int)
+make_matrixes path = do
+    contents <- readFile path
+    let 
+        sentences = lines contents
+        -- list of pairs: first is a word, second is the pos
+        pair_lst = (map split sentences)
+
+        -- words and pos lst (repetitive elements)
+        words = map fst pair_lst
+        pos = map snd pair_lst
+
+        -- words and pos lst
+        word_lst = new_elem words []
+        pos_lst = new_elem pos []
+
+        -- matrix initialization
+        transition_matrix = init_Matrix ("<S>": pos_lst) (pos_lst ++ ["<E>"])
+        emission_matrix = init_Matrix word_lst pos_lst
+    
+    return (length words, length word_lst)
+
 -- filter out redundant elements
-new_elem [] acc = []
+new_elem :: Eq a => [a] -> [a] -> [a]
+new_elem [] acc = acc
 new_elem (h:t) acc 
     | h `elem` acc = new_elem t acc
     | otherwise = new_elem t (h : acc)
