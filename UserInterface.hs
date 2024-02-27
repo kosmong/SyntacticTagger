@@ -10,6 +10,7 @@ module UserInterface where
  go
 -}
 import System.IO
+import Prediction
 
 -- this will probably take our model and produce our string
 categorize :: String -> IO String
@@ -17,25 +18,16 @@ categorize model =
     do
         putStrLn "Please enter your sentence. :)"
         sentence <- getLine
-        -- line <- preprocess sentence
-        -- ans <- predict model sentence
-        putStrLn "ans"
-        putStrLn "Is this correct?"
-        correct <- getLine
-        if correct `elem` ["n","no","non"]
-            then do 
-                -- update model
-                categorize model
-            else return "ans"
-        
-        -- askagain model
-        -- return ans
-        putStrLn "Do you want to ask again?"
-        playerA <- getLine
-        if  playerA `elem` ["y","yes","ye","oui"]
+        if (sentence == "")
             then do
+                putStr "no input, please enter something"
                 categorize model
-            else return sentence
+            else do
+                ans <- predict model line where line = process_user_data sentence
+                return ans
+        --         askagain model
+        -- return ans
+
 
 askagain :: String -> IO String
 askagain model = 
