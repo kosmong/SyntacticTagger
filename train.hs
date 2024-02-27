@@ -1,5 +1,5 @@
 module Train where
-    
+
 data HMMMatrix = Empty
         | Matrix [String] [String] [[Double]]
     deriving Show
@@ -54,28 +54,6 @@ helperfun (h:t) acc
     | h == ' ' = (acc, t)
     | otherwise = helperfun t (acc ++ [h])
 
--- Loads words from a text file into a list.
-readtxt :: FilePath -> IO String
-readtxt path = do
-    contents <- readFile path
-    let
-        -- list of pairs: first is a word, second is the pos
-        pair_lst = (map split (lines contents))
-
-        -- words and pos lst (repetitive elements)
-        words = map fst pair_lst
-        pos = map snd pair_lst
-
-        -- words and pos lst
-        word_lst = newElem words []
-        pos_lst = newElem pos []
-
-        -- matrix initialization
-        transition_matrix = initMatrix ("<S>": pos_lst) (pos_lst ++ ["<E>"])
-        emission_matrix = initMatrix word_lst pos_lst
-
-    return contents
-
 makeMatrixes :: FilePath -> IO HMMModel
 makeMatrixes path = do
     contents <- readFile path
@@ -88,16 +66,9 @@ makeMatrixes path = do
         words = map fst pair_lst
         pos = map snd pair_lst
 
-        -- get word and pos counts as well
-        wrd_c = newElemCount words [] []
-        pos_c = newElemCount pos [] []
-
-        word_counts = uncurry zip wrd_c
-        pos_counts = uncurry zip pos_c
-
         -- words and pos lst
-        word_lst = fst wrd_c
-        pos_lst = fst pos_c
+        word_lst = newElem words []
+        pos_lst = newElem pos []
 
         -- get all possible combination of wrd and cat
         all_combos = [(x,y) | x<-word_lst, y<-pos_lst]
@@ -109,19 +80,6 @@ makeMatrixes path = do
         emission_matrix = fillEmissionMatrix empty_emission_matrix pair_lst all_combos
 
     return (Model transition_matrix emission_matrix)
-
--- filter out redundant elements and count number of ocurrences
-newElemCount :: Eq a => [a] -> [a] -> [Double] -> ([a],[Double])
-newElemCount [] acc count = (acc,count)
-newElemCount (h:t) acc count
-    | h `elem` acc = newElemCount t acc (addIndex count (find acc h 0) 0)
-    | otherwise = newElemCount t (h : acc) (1:count)
-
--- add to counts at specified index
-addIndex :: [Double] -> Int -> Int ->  [Double]
-addIndex (h:t) index acc
-    | index == acc = h+1:t
-    | otherwise = h: addIndex t index (acc+1)
 
 -- filter out redundant elements
 newElem :: Eq a => [a] -> [a] -> [a]
