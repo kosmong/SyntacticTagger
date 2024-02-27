@@ -1,6 +1,9 @@
+module Prediction where
+
 import Data.Char
 import Train
 import Data.List (permutations)
+
 
 -- split the user input sentence string into list of strings
 split2lst :: String -> [String]
@@ -85,3 +88,6 @@ best_solution model sentence lstoflst = argmax (prob model sentence) (transition
 
 final_output :: [String] -> [String] -> [(String, String)]
 final_output sentence category = ("", "<S>") : zip sentence (removeFirstLast category) ++ [("", "<E>")]
+
+predict :: HMMModel -> [String] -> [(String, String)]
+predict model sentence = final_output sentence (best_solution model sentence (generate_transitions sentence model))
