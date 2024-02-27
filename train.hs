@@ -4,6 +4,7 @@ data HMMMatrix = Empty
 
 data HMMModel = None
         | Model HMMMatrix HMMMatrix
+    deriving Show
 
 -- get data from the matrix
 getData :: HMMMatrix -> String -> String -> Maybe Double
@@ -96,9 +97,14 @@ makeMatrixes path = do
         word_lst = fst wrd_c
         pos_lst = fst pos_c
 
+        -- get all possible combination of wrd and cat
+        all_combos = [(x,y) | x<-word_lst, y<-pos_lst]
+
         -- matrix initialization
         transition_matrix = initMatrix ("<S>": pos_lst) (pos_lst ++ ["<E>"])
-        emission_matrix = initMatrix word_lst pos_lst
+        empty_emission_matrix = initMatrix word_lst pos_lst
+
+        emission_matrix = fillEmissionMatrix empty_emission_matrix pair_lst all_combos
 
     return (Model transition_matrix emission_matrix)
 
@@ -123,23 +129,32 @@ newElem (h:t) acc
     | otherwise = newElem t (h : acc)
 
 
-fillEmissionMatrix :: HMMMatrix -> [(String,Double)] -> [(String,String)]-> [(String,String)] -> HMMMatrix
-fillEmissionMatrix Empty _ _ _ = Empty
-fillEmissionMatrix e_matrix _ _ [] = e_matrix
-fillEmissionMatrix (Matrix lst1 lst2 lstoflst) pos_counts pairs (p1:rest) = 
+fillEmissionMatrix :: HMMMatrix -> [(String,String)]-> [(String,String)] -> HMMMatrix
+fillEmissionMatrix Empty _ _ = Empty
+fillEmissionMatrix e_matrix _ [] = e_matrix
+fillEmissionMatrix (Matrix lst1 lst2 lstoflst) pairs (p1:rest) = 
     let
-        curr_emission_matrix = calculateEmission (Matrix lst1 lst2 lstoflst) (fst p1) (snd p1) pos_counts pairs
+        curr_emission_matrix = calculateEmission (Matrix lst1 lst2 lstoflst) (fst p1) (snd p1) pairs
     in
-        fillEmissionMatrix curr_emission_matrix pos_counts pairs rest
+        fillEmissionMatrix curr_emission_matrix pairs rest
 
-calculateEmission :: HMMMatrix -> String -> String -> [(String,Double)] -> [(String,String)] -> HMMMatrix
-calculateEmission Empty _ _ _ _ = Empty
-calculateEmission (Matrix lst1 lst2 lstoflst) wrd cat pos_counts pairs =
+calculateEmission :: HMMMatrix -> String -> String -> [(String,String)] -> HMMMatrix
+calculateEmission Empty _ _ _ = Empty
+calculateEmission (Matrix lst1 lst2 lstoflst) wrd cat pairs =
         let
             pairsWithCategory = filter (\x -> snd x == cat) pairs
             catWrdCoocurrence = filter (\x -> fst x == wrd) pairsWithCategory
             catWrdCoocurrenceCount = fromIntegral (length catWrdCoocurrence)
-            catCount = snd (head pos_counts)
-            prob = catCount / catWrdCoocurrenceCount
+            catCount = fromIntegral (length pairsWithCategory)
+            prob = catWrdCoocurrenceCount / catCount
         in
             changeElem_str wrd cat prob (Matrix lst1 lst2 lstoflst)
+
+
+-- for small test
+lst1= ["yes","no","jak", "pos"]
+lst2=["adj","adv","n"]
+ma = initMatrix lst1 lst2
+pairs = [("yes","adj"),("no","adv"),("jak","n"), ("pos", "n")]
+all_combo = [(x,y) | x<-lst1, y<-lst2]
+-- ghci> fillEmissionMatrix ma pairs all_combo
