@@ -1,3 +1,5 @@
+module Train where
+    
 data HMMMatrix = Empty
         | Matrix [String] [String] [[Double]]
     deriving Show
