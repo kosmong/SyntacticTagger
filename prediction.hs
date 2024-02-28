@@ -2,8 +2,8 @@ module Prediction where
 
 import Data.Char
 import Train
-import Data.List (permutations)
-
+import Data.List
+import Data.Ord
 
 -- split the user input sentence string into list of strings
 split2lst :: String -> [String]
@@ -32,12 +32,9 @@ process_user_data str = split_punctuation_marks (split2lst str)
 
 -- argmax function that returns the arguments that maximize the function
 argmax :: (Ord a) => (b -> a) -> [b] -> b
-argmax f (x:xs) = helper xs x
-  where
-    helper [] best = best
-    helper (y:ys) best
-      | f y > f best = helper ys y
-      | otherwise = helper ys best
+argmax f l
+    | null l = error "Given list is empty"
+    | otherwise = maximumBy (comparing f) l
 
 -- enumerate all the senarios
 enumerateScenarios :: [a] -> Int -> [[a]]
@@ -46,9 +43,9 @@ enumerateScenarios xs k = [x : rest | x <- xs, rest <- enumerateScenarios xs (k 
 
 generate_transitions :: [String] -> HMMModel -> [[String]]
 generate_transitions [] _ = [["<S>", "<E>"]]
-generate_transitions lststr (Model (Matrix catlst1 catlst2 lstoflst) emission_matrix) = 
+generate_transitions lststr (Model (Matrix (c:cs) catlst2 lstoflst) emission_matrix) = 
     let
-        transitions = enumerateScenarios catlst1 (length lststr)
+        transitions = enumerateScenarios cs (length lststr)
     in 
         addSE transitions
 
