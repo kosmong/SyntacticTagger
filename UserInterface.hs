@@ -10,10 +10,11 @@ module UserInterface where
  go
 -}
 import System.IO
+import Train
 import Prediction
 
 -- this will probably take our model and produce our string
-categorize :: String -> IO String
+categorize :: HMMModel -> IO [(String, String)]
 categorize model = 
     do
         putStrLn "Please enter your sentence. :)"
@@ -23,13 +24,15 @@ categorize model =
                 putStr "no input, please enter something"
                 categorize model
             else do
-                ans <- predict model line where line = process_user_data sentence
+                let line = process_user_data sentence
+                    ans = predict model line
                 return ans
+
         --         askagain model
         -- return ans
 
 
-askagain :: String -> IO String
+askagain :: HMMModel -> IO [(String, String)]
 askagain model = 
     do
         putStrLn "Do you want to ask again?"
@@ -37,6 +40,8 @@ askagain model =
         if ans `elem` ["y","yes","ye","oui"]
             then do
                 categorize model
-            else return ""
+            else return [("", "")]
 
-main = categorize "main"
+main = do 
+    model <- makeMatrixes "new_test.txt"
+    categorize model
