@@ -9,13 +9,13 @@ data HMMModel = None
     deriving Show
 
 -- get data from the matrix
-getData :: HMMMatrix -> String -> String -> Maybe Double
-getData Empty _ _ = Nothing
+getData :: HMMMatrix -> String -> String -> Double
+getData Empty _ _ = 0.0
 getData (Matrix lst1 lst2 lstoflst) str1 str2 =
     if (str1 `elem` lst1 && str2 `elem` lst2) then
-        Just ((lstoflst !! (find lst1 str1 0)) !! find lst2 str2 0)
+        ((lstoflst !! (find lst1 str1 0)) !! find lst2 str2 0)
     else
-        Nothing
+        0.0
 
 -- the function that replace the element in the list given index
 replaceAtIndex :: Int -> a -> [a] -> [a]
@@ -68,17 +68,22 @@ makeMatrixes path = do
 
         -- words and pos lst
         word_lst = newElem words []
-        pos_lst = newElem pos []
+        pos_lst = filter (\x -> x /= "" && x/= "O") (newElem pos [])
+        front_pos = "<S>": pos_lst
+        back_pos = pos_lst ++ ["<E>"]
 
-        -- get all possible combination of wrd and cat
-        all_combos = [(x,y) | x<-word_lst, y<-pos_lst]
+        -- get all possible combination for transition and emission
+        wrd_cat_combos = [(x,y) | x<-word_lst, y<-pos_lst]
+        cat_cat_combos = [(x,y) | x<-front_pos, y<-back_pos]
+
+        pos_SE = filter (/= "O") (("<S>":addSEPos pos) ++ ["<E>"])
 
         -- matrix initialization
-        transition_matrix = initMatrix ("<S>": pos_lst) (pos_lst ++ ["<E>"])
+        empty_transition_matrix = initMatrix front_pos back_pos
         empty_emission_matrix = initMatrix word_lst pos_lst
 
-        emission_matrix = fillEmissionMatrix empty_emission_matrix pair_lst all_combos
-
+        emission_matrix = fillEmissionMatrix empty_emission_matrix pair_lst wrd_cat_combos
+        transition_matrix = fillTransitionMatrix empty_transition_matrix pos_SE cat_cat_combos
     return (Model transition_matrix emission_matrix)
 
 -- filter out redundant elements
@@ -88,8 +93,13 @@ newElem (h:t) acc
     | h `elem` acc = newElem t acc
     | otherwise = newElem t (h : acc)
 
+addSEPos :: [String] -> [String]
+addSEPos [] = []
+addSEPos (h:t) 
+    | h == "" = "<E>":("<S>" : addSEPos t)
+    | otherwise = h:addSEPos t
 
-fillEmissionMatrix :: HMMMatrix -> [(String,String)]-> [(String,String)] -> HMMMatrix
+fillEmissionMatrix :: HMMMatrix -> [(String,String)] -> [(String,String)] -> HMMMatrix
 fillEmissionMatrix Empty _ _ = Empty
 fillEmissionMatrix e_matrix _ [] = e_matrix
 fillEmissionMatrix (Matrix lst1 lst2 lstoflst) pairs (p1:rest) = 
@@ -109,6 +119,36 @@ calculateEmission (Matrix lst1 lst2 lstoflst) wrd cat pairs =
             prob = catWrdCoocurrenceCount / catCount
         in
             changeElem_str wrd cat prob (Matrix lst1 lst2 lstoflst)
+
+fillTransitionMatrix :: HMMMatrix -> [String] -> [(String,String)] -> HMMMatrix
+fillTransitionMatrix Empty _ _ = Empty
+fillTransitionMatrix t_matrix _ [] = t_matrix
+fillTransitionMatrix (Matrix lst1 lst2 lstoflst) pos_order (p1:rest) =
+    let 
+        pairs = getNeighbourPosPairs pos_order
+        pos_pairs = pairs ++ [(snd (last pairs), "<E>")]
+        curr_transition_matrix = calculateTransmission (Matrix lst1 lst2 lstoflst) (fst p1) (snd p1) pos_pairs
+    in
+        fillTransitionMatrix curr_transition_matrix pos_order rest
+
+calculateTransmission :: HMMMatrix -> String -> String -> [(String, String)] -> HMMMatrix
+calculateTransmission Empty _ _ _ = Empty
+calculateTransmission (Matrix lst1 lst2 lstoflst) pos1 pos2 pos_pairs =
+    let
+        pairsWithPos1First = filter (\x -> fst x == pos1) pos_pairs
+        pairsWithPos1Pos2 = filter (\x -> snd x == pos2) pairsWithPos1First
+        pos1Pos2Count = fromIntegral (length pairsWithPos1Pos2)
+        pos1Count = fromIntegral (length pairsWithPos1First)
+        prob = pos1Pos2Count / pos1Count
+    in
+        changeElem_str pos1 pos2 prob (Matrix lst1 lst2 lstoflst)
+
+getNeighbourPosPairs :: [String] -> [(String, String)]
+getNeighbourPosPairs [] = []
+getNeighbourPosPairs (c1:c2:t)
+    | c2 == [] || t == [] = []
+    | c1 == "<E>" && c2 == "<S>" = getNeighbourPosPairs t
+    | otherwise = (c1,c2) : getNeighbourPosPairs (c2:t)
 
 
 -- for small test
