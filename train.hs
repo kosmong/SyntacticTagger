@@ -67,16 +67,15 @@ makeMatrixes path = do
         pos = map snd pair_lst
 
         -- words and pos lst
-        word_lst = newElem words []
-        pos_lst = filter (\x -> x /= "" && x/= "O") (newElem pos [])
+        word_lst = filter (/= "") (newElem words [])
+        pos_lst = filter (/= "") (newElem pos [])
         front_pos = "<S>": pos_lst
         back_pos = pos_lst ++ ["<E>"]
+        pos_SE = ("<S>":addSEPos pos) ++ ["<E>"]
 
         -- get all possible combination for transition and emission
         wrd_cat_combos = [(x,y) | x<-word_lst, y<-pos_lst]
         cat_cat_combos = [(x,y) | x<-front_pos, y<-back_pos]
-
-        pos_SE = filter (/= "O") (("<S>":addSEPos pos) ++ ["<E>"])
 
         -- matrix initialization
         empty_transition_matrix = initMatrix front_pos back_pos
@@ -95,14 +94,14 @@ newElem (h:t) acc
 
 addSEPos :: [String] -> [String]
 addSEPos [] = []
-addSEPos (h:t) 
+addSEPos (h:t)
     | h == "" = "<E>":("<S>" : addSEPos t)
     | otherwise = h:addSEPos t
 
 fillEmissionMatrix :: HMMMatrix -> [(String,String)] -> [(String,String)] -> HMMMatrix
 fillEmissionMatrix Empty _ _ = Empty
 fillEmissionMatrix e_matrix _ [] = e_matrix
-fillEmissionMatrix (Matrix lst1 lst2 lstoflst) pairs (p1:rest) = 
+fillEmissionMatrix (Matrix lst1 lst2 lstoflst) pairs (p1:rest) =
     let
         curr_emission_matrix = calculateEmission (Matrix lst1 lst2 lstoflst) (fst p1) (snd p1) pairs
     in
@@ -124,7 +123,7 @@ fillTransitionMatrix :: HMMMatrix -> [String] -> [(String,String)] -> HMMMatrix
 fillTransitionMatrix Empty _ _ = Empty
 fillTransitionMatrix t_matrix _ [] = t_matrix
 fillTransitionMatrix (Matrix lst1 lst2 lstoflst) pos_order (p1:rest) =
-    let 
+    let
         pairs = getNeighbourPosPairs pos_order
         pos_pairs = pairs ++ [(snd (last pairs), "<E>")]
         curr_transition_matrix = calculateTransmission (Matrix lst1 lst2 lstoflst) (fst p1) (snd p1) pos_pairs

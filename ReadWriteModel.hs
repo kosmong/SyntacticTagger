@@ -69,24 +69,3 @@ findSeparated "" _ = ""
 findSeparated str splitter
     | take (length splitter) str == splitter = ""
     | otherwise = head str : findSeparated (tail str) splitter
-
-getPosOrder :: FilePath -> IO [String]
-getPosOrder path = do
-    contents <- readFile path
-    let
-        sentences = lines contents
-        -- list of pairs: first is a word, second is the pos
-        pair_lst = map split sentences
-
-        -- words and pos lst (repetitive elements)
-        words = map fst pair_lst
-        pos = map snd pair_lst
-
-        start_end_pos = "<S>" : putStartsEnds pos
-    return start_end_pos
-
-putStartsEnds :: [String] -> [String]
-putStartsEnds [] = ["<E>"]
-putStartsEnds (h:tail)
-    | h == "" = "<E>":("<S>":putStartsEnds tail)
-    | otherwise = h:putStartsEnds tail
