@@ -12,6 +12,7 @@ module UserInterface where
 import System.IO
 import Train
 import Prediction
+import ReadWriteModel (readModel)
 
 -- this will probably take our model and produce our string
 categorize :: HMMModel -> IO [(String, String)]
@@ -43,5 +44,7 @@ askagain model =
             else return [("", "")]
 
 main = do 
-    model <- makeMatrixes "new_test.txt"
+    -- model <- makeMatrixes "new_test.txt"
+    -- model <- readModel "new_train_model.txt"
+    model <- readModel "./small_model.txt"
     categorize model

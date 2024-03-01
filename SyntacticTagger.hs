@@ -1,3 +1,0 @@
--- This project will attempt to split a paragraph into its phrasal category.
--- Need events and states for HMM
--- Phrasal category is 

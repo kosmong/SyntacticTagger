@@ -1,13 +1,19 @@
 module ReadWriteModel where
 import Train
+
+{-
+Write the given HMMModel into a text file of the given path
+-}
 writeModel :: IO HMMModel -> FilePath -> IO ()
--- writeModel None _ = return "There is no model"
 writeModel modelIO path = do
     model <- modelIO
     let
         modelstr = show model
     writeFile path modelstr
 
+{-
+Read the HMMModel from text file of the given path
+-}
 readModel :: FilePath -> IO HMMModel
 readModel path = do
     model <- readFile path
@@ -18,6 +24,9 @@ readModel path = do
 
     return (Model transition_matrix emission_matrix)
 
+{-
+Convert the given string into an HMMMatrix
+-}
 stringToMatrix :: String -> HMMMatrix
 stringToMatrix str =
     let
@@ -36,6 +45,10 @@ stringToMatrix str =
     in
         Matrix lst1 lst2 lstoflst
 
+
+{-
+Find the 2 strings of the emission and transition matrix from given string
+-}
 findMatrixInString :: String -> (String,String)
 findMatrixInString str =
     let
@@ -48,22 +61,30 @@ findMatrixInString str =
     in
     (t_matrix_str, e_matrix_str)
 
--- return index right before target string
+{-
+Return index right before target string
+-}
 findString :: String -> String -> Int -> Int
-findString "" target _ = error "word not found"
+findString "" target _ = error (target ++ "not found")
 findString str target i
     | take (length target) str == target = i
     | otherwise = findString (tail str) target i+1
 
+{-
+Convert given string into an array of strings given a splitter string
+-}
 stringToStringArray :: String -> String -> [String]
 stringToStringArray "" _ = []
 stringToStringArray str splitter =
     let
         w = findSeparated str splitter
-        new_str = drop (length w+1) str
+        new_str = drop (length w + length splitter) str
     in
         w : stringToStringArray new_str splitter
 
+{-
+Find the first string before the first splitter
+-}
 findSeparated :: String -> String -> String
 findSeparated "" _ = ""
 findSeparated str splitter

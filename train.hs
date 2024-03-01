@@ -8,7 +8,9 @@ data HMMModel = None
         | Model HMMMatrix HMMMatrix
     deriving Show
 
--- get data from the matrix
+{- 
+Get data from the matrix
+-}
 getData :: HMMMatrix -> String -> String -> Double
 getData Empty _ _ = 0.0
 getData (Matrix lst1 lst2 lstoflst) str1 str2 =
@@ -17,43 +19,63 @@ getData (Matrix lst1 lst2 lstoflst) str1 str2 =
     else
         0.0
 
--- the function that replace the element in the list given index
+{- 
+The function that replaces the element in the list given index
+-}
 replaceAtIndex :: Int -> a -> [a] -> [a]
 replaceAtIndex i x xs = take i xs ++ [x] ++ drop (i + 1) xs
 
--- the function that replace the element in the 2d list given index
+{- 
+The function that replace the element in the 2d list given index
+-}
 changeElem :: Int -> Int -> a -> [[a]] -> [[a]]
 changeElem _ _ _ [] = []  -- Empty list case
 changeElem 0 col x (l:ls) = replaceAtIndex col x l : ls  -- Reduce the column
 changeElem row col x (l:ls) = l : changeElem (row - 1) col x ls  -- Reduce the row
 
+{-
+Change the element in the HMMMatrix corresponding to the given strings to the target value
+-}
 changeElem_str :: String -> String -> Double -> HMMMatrix -> HMMMatrix
 changeElem_str str1 str2 x (Matrix lst1 lst2 lstoflst) =
     Matrix lst1 lst2 (changeElem (find lst1 str1 0) (find lst2 str2 0) x lstoflst)
 
 
--- find the element return index if found, return -1 if not found
+{- 
+Find the element, return index if found, return -1 if not found
+-}
 find :: (Eq t) => [t] -> t -> Int -> Int
 find [] _ _ = -1
 find (h : t) s n
     | h == s = n
     | otherwise = find t s (n+1)
 
--- initialize the matrix
+{-
+Initialize the matrix to all 0s
+-}
 initMatrix :: [String] -> [String] -> HMMMatrix
 initMatrix lst1 lst2 = Matrix lst1 lst2 [[0.0 | _ <- lst2] | _ <- lst1]
 
--- split the elements into pairs of strings
+{- 
+Split the elements into pairs of strings
+-}
 split :: String -> (String, String)
 split [] = ("","")
 split str = helperfun str ""
 
+{-
+Helper for split function, build string until space
+-}
 helperfun :: String -> String -> (String, String)
 helperfun "" _ = ("","")
 helperfun (h:t) acc
     | h == ' ' = (acc, t)
     | otherwise = helperfun t (acc ++ [h])
 
+{-
+Given a data set in a text file, make the emission and transmission matrixes for it
+Return a model storing both the matrixes
+-}
 makeMatrixes :: FilePath -> IO HMMModel
 makeMatrixes path = do
     contents <- readFile path
@@ -81,23 +103,34 @@ makeMatrixes path = do
         empty_transition_matrix = initMatrix front_pos back_pos
         empty_emission_matrix = initMatrix word_lst pos_lst
 
+        -- fill in the matrixes
         emission_matrix = fillEmissionMatrix empty_emission_matrix pair_lst wrd_cat_combos
         transition_matrix = fillTransitionMatrix empty_transition_matrix pos_SE cat_cat_combos
     return (Model transition_matrix emission_matrix)
 
--- filter out redundant elements
+
+{-
+Filter out redundant elements
+-}
 newElem :: Eq a => [a] -> [a] -> [a]
 newElem [] acc = acc
 newElem (h:t) acc
     | h `elem` acc = newElem t acc
     | otherwise = newElem t (h : acc)
 
+{-
+Add <E> to the end of a sentence and <S> to the beginning of a sentence
+-}
 addSEPos :: [String] -> [String]
 addSEPos [] = []
 addSEPos (h:t)
     | h == "" = "<E>":("<S>" : addSEPos t)
     | otherwise = h:addSEPos t
 
+{-
+Fill the emission matrix
+Calculate probability of all Word Category combos
+-}
 fillEmissionMatrix :: HMMMatrix -> [(String,String)] -> [(String,String)] -> HMMMatrix
 fillEmissionMatrix Empty _ _ = Empty
 fillEmissionMatrix e_matrix _ [] = e_matrix
@@ -107,6 +140,10 @@ fillEmissionMatrix (Matrix lst1 lst2 lstoflst) pairs (p1:rest) =
     in
         fillEmissionMatrix curr_emission_matrix pairs rest
 
+{-
+Calculate the conditional probability of a Word Category combo
+Change the probability in the matrix corresponding to the Word and Category combo
+-}
 calculateEmission :: HMMMatrix -> String -> String -> [(String,String)] -> HMMMatrix
 calculateEmission Empty _ _ _ = Empty
 calculateEmission (Matrix lst1 lst2 lstoflst) wrd cat pairs =
@@ -119,6 +156,10 @@ calculateEmission (Matrix lst1 lst2 lstoflst) wrd cat pairs =
         in
             changeElem_str wrd cat prob (Matrix lst1 lst2 lstoflst)
 
+{-
+Fill the transition matrix
+Calculate probability of all consecutive Category combos
+-}
 fillTransitionMatrix :: HMMMatrix -> [String] -> [(String,String)] -> HMMMatrix
 fillTransitionMatrix Empty _ _ = Empty
 fillTransitionMatrix t_matrix _ [] = t_matrix
@@ -130,6 +171,10 @@ fillTransitionMatrix (Matrix lst1 lst2 lstoflst) pos_order (p1:rest) =
     in
         fillTransitionMatrix curr_transition_matrix pos_order rest
 
+{-
+Calculate the conditional probability of a consecutive Category combo
+Change the probability in the matrix corresponding to the combo
+-}
 calculateTransmission :: HMMMatrix -> String -> String -> [(String, String)] -> HMMMatrix
 calculateTransmission Empty _ _ _ = Empty
 calculateTransmission (Matrix lst1 lst2 lstoflst) pos1 pos2 pos_pairs =
@@ -142,6 +187,9 @@ calculateTransmission (Matrix lst1 lst2 lstoflst) pos1 pos2 pos_pairs =
     in
         changeElem_str pos1 pos2 prob (Matrix lst1 lst2 lstoflst)
 
+{-
+Get all pairs of consecutive string in a list of strings
+-}
 getNeighbourPosPairs :: [String] -> [(String, String)]
 getNeighbourPosPairs [] = []
 getNeighbourPosPairs (c1:c2:t)
