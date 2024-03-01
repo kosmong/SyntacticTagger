@@ -78,7 +78,7 @@ stringToStringArray "" _ = []
 stringToStringArray str splitter =
     let
         w = findSeparated str splitter
-        new_str = drop (length w + length splitter) str
+        new_str = drop (length w + 1) str
     in
         w : stringToStringArray new_str splitter
 
