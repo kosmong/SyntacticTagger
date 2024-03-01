@@ -33,7 +33,7 @@ process_user_data str = split_punctuation_marks (split2lst str)
 -- argmax function that returns the arguments that maximize the function
 argmax :: (Ord a) => (b -> a) -> [b] -> b
 argmax f l
-    | null l = error "Given list is empty"
+    | null l = error "Invalid sentence, cannot predict."
     | otherwise = maximumBy (comparing f) l
 
 -- enumerate all the senarios
@@ -64,6 +64,9 @@ prob (Model transition_matrix emission_matrix) sentence categories =
         transition_probability = trans_prob transition_matrix categories
         emission_probability = emis_prob emission_matrix sentence (removeFirstLast categories)
     in 
+        -- if emission_probability == 0
+        --     then transition_probability
+        --     else transition_probability * emission_probability
         transition_probability * emission_probability
 
 
