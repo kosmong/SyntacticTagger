@@ -1,4 +1,4 @@
-# SyntacticTagger
+# Syntactic Tagger
 
 ## Description
 The project is using HMM to analysis the syntax of a sentence, divide the sentences into chunks, and tag the chunks by their phrase categories.
